@@ -125,9 +125,10 @@ function Watermark({ text }: { text: string }) {
       const editor = document.querySelector<HTMLElement>('[data-composer-card] [contenteditable="true"]')
       if (!editor) return
       const rect = editor.getBoundingClientRect()
+      const inset = placeholder?.getBoundingClientRect()
       const style = getComputedStyle(placeholder ?? editor)
       Object.assign(node.style, {
-        left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`,
+        left: `${inset?.left ?? rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`,
         fontFamily: style.fontFamily, fontSize: style.fontSize, fontWeight: style.fontWeight,
         lineHeight: style.lineHeight,
       })
