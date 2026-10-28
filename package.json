@@ -1,0 +1,60 @@
+{
+  "name": "dsh-next-sentence",
+  "version": "0.1.0",
+  "description": "Contextual next-prompt suggestions for DeepSeek Harness",
+  "keywords": ["deepseek", "deepseek-harness", "dsh", "dsh-plugin", "dsh-tui", "autocomplete", "suggestion"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UreMySunshine/dsh-next-sentence.git"
+  },
+  "homepage": "https://github.com/UreMySunshine/dsh-next-sentence#readme",
+  "bugs": {
+    "url": "https://github.com/UreMySunshine/dsh-next-sentence/issues"
+  },
+  "author": "UreMySunshine",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": { "types": "./lib/index.d.ts", "default": "./lib/index.js" },
+    "./client": { "types": "./lib/client.d.ts", "default": "./lib/client.js" },
+    "./tui": { "types": "./lib/tui.d.ts", "default": "./lib/tui.js" },
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": ["lib", "src", "scripts", "cordis.patch.yml", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "node scripts/build.mjs && tsc -p tsconfig.json",
+    "postinstall": "node scripts/patch-tui.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-model-selection",
+        "@deepseek-ai/dsh-client-ui-session",
+        "@deepseek-ai/dsh-client-ui-renderer"
+      ],
+      "platform": "web"
+    }
+  },
+  "engines": { "node": ">=22.19", "dsh": ">=0.2.1-rc.2 <0.3.0" },
+  "peerDependencies": { "@deepseek-ai/cordis": "^4.0.5" },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5",
+    "@deepseek-ai/dsh-api-session-controller": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-client-connection": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-conversation": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-model-selection": "0.2.1-rc.2",
+    "@deepseek-ai/dsh-client-ui-renderer": "0.2.1-rc.2",
+    "@types/node": "^24.0.0",
+    "@types/react": "~18.3.1",
+    "esbuild": "^0.25.0",
+    "react": "^18.2.0",
+    "typescript": "^6.0.3"
+  },
+  "license": "MIT"
+}
