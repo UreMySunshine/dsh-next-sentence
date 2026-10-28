@@ -129,12 +129,14 @@ function Watermark({ text }: { text: string }) {
     const update = () => {
       const editor = editorFor()
       if (!editor) return
-      const rect = editor.getBoundingClientRect()
       const placeholder = placeholderFor()
-      const inset = placeholder?.getBoundingClientRect()
+      // The paragraph is the actual text line: it carries the composer's inner
+      // padding and moves below the attachment rail when an image is present.
+      const line = editor.querySelector('p') ?? editor
+      const rect = line.getBoundingClientRect()
       const style = getComputedStyle(placeholder ?? editor)
       Object.assign(node.style, {
-        left: `${inset?.left ?? rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`,
+        left: `${rect.left}px`, top: `${rect.top}px`, width: `${editor.getBoundingClientRect().width}px`,
         fontFamily: style.fontFamily, fontSize: style.fontSize, fontWeight: style.fontWeight,
         lineHeight: style.lineHeight,
       })
@@ -207,7 +209,12 @@ function Suggestion({ running, input, inputActions, eventSource, directory, rpc,
     }
     if (cache.suggestion) { setSuggestion(cache.suggestion); return }
     if (revision === 0) return
-    if (cache.dismissed || !selected || !rpc || input.phase !== 'plain') return
+    if (cache.dismissed || !rpc || running || input.draft !== '') return
+    if (!selected) {
+      // Opening an old session may not have loaded its model directory yet.
+      void directory.load().catch(() => undefined)
+      return
+    }
     const controller = new AbortController()
     const timer = window.setTimeout(async () => {
       const model = directory.store.getSnapshot().current
