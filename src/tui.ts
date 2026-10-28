@@ -3,6 +3,7 @@ import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import { INSTRUCTIONS, normalizeSuggestion, promptFor, type HistoryMessage } from './suggestion.js'
 import { completeSuggestion } from './llm.js'
+import { readConfig } from './config.js'
 
 export const name = 'dsh-next-sentence-tui'
 export const inject = ['llm']
@@ -71,6 +72,10 @@ export function apply(ctx: Context): void {
       return
     }
     if (event.type !== 'turn/end' || ctx.llm === undefined) return
+    if (readConfig().enabled === false) {
+      publish('')
+      return
+    }
     const controller = new AbortController()
     pending.set(session, controller)
     const header = session.requestHeader()

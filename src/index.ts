@@ -2,6 +2,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import { INSTRUCTIONS, normalizeSuggestion, promptFor, type HistoryMessage } from './suggestion.js'
 import { completeSuggestion } from './llm.js'
+import { readConfig, writeConfig } from './config.js'
 
 export const name = 'dsh-next-sentence'
 export const inject = ['llm']
@@ -19,6 +20,10 @@ interface RouteRequest {
   on(event: 'data' | 'end' | 'error', listener: (value?: unknown) => void): void
 }
 interface RouteResponse { writeHead(status: number, headers?: Record<string, string>): void; end(body?: string): void }
+
+function isRecord(value: unknown): value is JsonObject {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
 
 function isSelection(value: unknown): value is SuggestRequest {
   if (typeof value !== 'object' || value === null) return false
@@ -57,25 +62,45 @@ export function apply(ctx: Context): void {
       handler: async (request: RouteRequest, response: RouteResponse) => {
         const rejection = connection.requestRejection(request)
         if (rejection !== undefined) { response.writeHead(rejection); response.end(); return }
-        if (request.method !== 'POST' || request.url?.split('?')[0] !== `${CHANNEL}/suggest`) {
+        const pathname = request.url?.split('?')[0] ?? ''
+        const endpoint = pathname.startsWith(`${CHANNEL}/`) ? pathname.slice(CHANNEL.length + 1) : undefined
+        if (request.method !== 'POST' || endpoint === undefined) {
           response.writeHead(404); response.end(); return
         }
         const rpc = { type: 'server-response', rpcId: '', result: {} as JsonObject }
         try {
           const body = await readBody(request) as JsonObject
-          if (body.type !== 'client-request' || typeof body.rpcId !== 'string' || body.method !== 'suggest' || !isSelection(body.payload)) {
+          if (body.type !== 'client-request' || typeof body.rpcId !== 'string' || body.method !== endpoint) {
             response.writeHead(400); response.end(); return
           }
           rpc.rpcId = body.rpcId
-          const input = body.payload
-          const text = await completeSuggestion(
-            ctx,
-            { provider: input.provider, model: input.model, reasoningEffort: input.reasoningEffort },
-            INSTRUCTIONS,
-            promptFor(input.history, input.draft),
-            AbortSignal.timeout(60_000),
-          )
-          rpc.result = { ok: true, value: { text: normalizeSuggestion(text, input.draft) } }
+          if (endpoint === 'config/get') {
+            rpc.result = { ok: true, value: readConfig() }
+          } else if (endpoint === 'config/set') {
+            const enabled = isRecord(body.payload) ? body.payload.enabled : undefined
+            if (typeof enabled !== 'boolean') {
+              rpc.result = { ok: false, error: { code: 'invalid-request', message: 'enabled must be a boolean', details: {} } }
+            } else {
+              writeConfig({ enabled })
+              rpc.result = { ok: true, value: { enabled } }
+            }
+          } else if (endpoint === 'suggest' && isSelection(body.payload)) {
+            const input = body.payload
+            if (readConfig().enabled === false) {
+              rpc.result = { ok: true, value: { text: '' } }
+            } else {
+              const text = await completeSuggestion(
+                ctx,
+                { provider: input.provider, model: input.model, reasoningEffort: input.reasoningEffort },
+                INSTRUCTIONS,
+                promptFor(input.history, input.draft),
+                AbortSignal.timeout(60_000),
+              )
+              rpc.result = { ok: true, value: { text: normalizeSuggestion(text, input.draft) } }
+            }
+          } else {
+            rpc.result = { ok: false, error: { code: 'not-found', message: `unknown endpoint ${String(endpoint)}`, details: {} } }
+          }
         } catch (error) {
           rpc.result = { ok: false, error: { code: 'suggest-failed', message: error instanceof Error ? error.message : String(error), details: {} } }
         }

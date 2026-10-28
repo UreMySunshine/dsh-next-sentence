@@ -47,17 +47,33 @@ const enabledStore = {
   },
 }
 
-function EnabledSetting() {
+function EnabledSetting({ rpc }: { rpc?: Rpc }) {
   const enabled = useSyncExternalStore(enabledStore.subscribe, enabledStore.getSnapshot)
+  useEffect(() => {
+    if (rpc === undefined) return
+    let cancelled = false
+    void rpc.call('/dsh-next-sentence', 'config/get', {}).then(result => {
+      const response = result as { ok: boolean; value?: { enabled?: boolean } }
+      if (!cancelled && response.ok && typeof response.value?.enabled === 'boolean') {
+        enabledStore.set(response.value.enabled)
+      }
+    }).catch(() => undefined)
+    return () => { cancelled = true }
+  }, [rpc])
+  const toggle = () => {
+    const next = !enabled
+    enabledStore.set(next)
+    void rpc?.call('/dsh-next-sentence', 'config/set', { enabled: next }).catch(() => undefined)
+  }
   return <div className="ns-setting-row">
     <div className="ns-setting-copy">
       <div className="ns-setting-title">自动推荐下一句话</div>
-      <div className="ns-setting-description">回合结束后，用当前模型生成一句可 Tab 填入的建议；每次推荐是一次单独的模型请求。</div>
+      <div className="ns-setting-description">回合结束后，用当前模型生成一句可 Tab 填入的建议；每次推荐是一次单独的模型请求。此开关同时控制桌面端与 dsh-tui。</div>
     </div>
     <div className="ns-setting-control">
       <span className="ns-setting-state">{enabled ? '开启' : '关闭'}</span>
       <button type="button" role="switch" aria-label="自动推荐下一句话" aria-checked={enabled}
-        className={`ns-setting-switch${enabled ? ' is-on' : ''}`} onClick={() => enabledStore.set(!enabled)}>
+        className={`ns-setting-switch${enabled ? ' is-on' : ''}`} onClick={toggle}>
         <span className="ns-setting-switch-knob" aria-hidden="true" />
       </button>
     </div>
@@ -255,7 +271,7 @@ export function apply(ctx: Context) {
 
   ctx.slots.inject(SETTINGS_SLOT, () => ctx.slots.register(
     { name: SETTINGS_SLOT, id: 'next-sentence-enabled', order: 30 },
-    EnabledSetting,
+    () => <EnabledSetting rpc={rpc} />,
   ))
 
   ctx.slots.inject(SLOT, () => ctx.slots.register({ name: SLOT, id: 'next-sentence' }, (props: OverlayProps) => {
