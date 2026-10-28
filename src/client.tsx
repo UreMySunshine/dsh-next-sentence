@@ -182,7 +182,7 @@ function Watermark({ text }: { text: string }) {
     }
   }, [text])
   return <div ref={ref} className="dsh-next-sentence" aria-hidden="true">
-    <span className="dsh-next-sentence-text">{text}</span><kbd>Tab</kbd>
+    <span className="dsh-next-sentence-text">{text}</span><kbd>Tab / →</kbd>
   </div>
 }
 
@@ -222,10 +222,23 @@ function Suggestion({ running, input, inputActions, eventSource, directory, rpc,
   }, [running, cache])
 
   useEffect(() => {
+    // A new durable event means the conversation moved on: an Esc dismissal
+    // applies to the old recommendation only.
+    if (revision > 0 && cache.dismissed) cache.dismissed = false
+  }, [revision, cache])
+
+  useEffect(() => {
     if (!enabled) { setSuggestion(''); return }
     if (input.draft || running) {
       // Typing keeps the cached recommendation; only non-empty drafts hide it.
       if (input.draft) setSuggestion('')
+      return
+    }
+    const history = historyOf(eventSource)
+    if (history.length === 0) {
+      // A blank session has nothing to base a next message on.
+      cache.suggestion = ''
+      setSuggestion('')
       return
     }
     if (cache.suggestion) { setSuggestion(cache.suggestion); return }
@@ -242,7 +255,7 @@ function Suggestion({ running, input, inputActions, eventSource, directory, rpc,
       if (!model || controller.signal.aborted) return
       try {
         const response = await rpc.call('/dsh-next-sentence', 'suggest', {
-          ...model, history: historyOf(eventSource), draft: '',
+          ...model, history, draft: '',
         }) as { ok: boolean; value?: { text: string } }
         if (!controller.signal.aborted && response.ok) {
           cache.suggestion = response.value?.text ?? ''
@@ -262,7 +275,10 @@ function Suggestion({ running, input, inputActions, eventSource, directory, rpc,
         setSuggestion('')
         return
       }
-      if (event.key !== 'Tab' || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return
+      const isRight = event.key === 'ArrowRight' || event.key === 'Right'
+        || event.code === 'ArrowRight' || event.keyCode === 39
+      if ((event.key !== 'Tab' && !isRight)
+        || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return
       if (!suggestionRef.current || !editorEnd(inputActions)) return
       event.preventDefault(); event.stopImmediatePropagation()
       const span = inputActions.captureInsertion()
