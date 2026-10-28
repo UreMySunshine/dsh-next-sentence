@@ -118,13 +118,19 @@ function editorEnd(actions: InputActions) {
 function Watermark({ text }: { text: string }) {
   const ref = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
+    const node = ref.current
+    if (!node) return
+    // Scope every lookup to THIS composer: several sessions can keep hidden
+    // composers mounted, and a global query would take another one's geometry.
+    const card = node.closest<HTMLElement>('[data-composer-card]')
+    if (!card) return
+    const placeholderFor = () => card.querySelector<HTMLElement>('[data-composer-placeholder]')
+    const editorFor = () => card.querySelector<HTMLElement>('[contenteditable="true"]')
     const update = () => {
-      const node = ref.current
-      if (!node) return
-      const placeholder = document.querySelector<HTMLElement>('[data-composer-placeholder]')
-      const editor = document.querySelector<HTMLElement>('[data-composer-card] [contenteditable="true"]')
+      const editor = editorFor()
       if (!editor) return
       const rect = editor.getBoundingClientRect()
+      const placeholder = placeholderFor()
       const inset = placeholder?.getBoundingClientRect()
       const style = getComputedStyle(placeholder ?? editor)
       Object.assign(node.style, {
@@ -138,19 +144,18 @@ function Watermark({ text }: { text: string }) {
     }
     update()
     const resize = new ResizeObserver(update)
-    const editor = document.querySelector<HTMLElement>('[data-composer-card] [contenteditable="true"]')
+    const editor = editorFor()
     if (editor) resize.observe(editor)
     // Attachments are inserted and removed as React children; a rebuilt
     // placeholder would otherwise become visible again and overlap the hint.
     const mutations = new MutationObserver(update)
-    const card = document.querySelector<HTMLElement>('[data-composer-card]')
-    if (card) mutations.observe(card, { childList: true, subtree: true })
+    mutations.observe(card, { childList: true, subtree: true })
     window.addEventListener('resize', update)
     return () => {
       resize.disconnect()
       mutations.disconnect()
       window.removeEventListener('resize', update)
-      document.querySelectorAll<HTMLElement>('[data-composer-placeholder]').forEach(el => { el.style.visibility = '' })
+      card.querySelectorAll<HTMLElement>('[data-composer-placeholder]').forEach(el => { el.style.visibility = '' })
     }
   }, [text])
   return <div ref={ref} className="dsh-next-sentence" aria-hidden="true">
