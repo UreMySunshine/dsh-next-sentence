@@ -135,7 +135,17 @@ export function fromReasoning(reasoning: string): string {
     .map(match => match[1]?.trim() ?? '')
     .filter(text => /[\u4e00-\u9fff]/u.test(text))
   if (quoted.length > 0) return quoted.at(-1) ?? ''
+
+  const sentences = reasoning.match(/[^。！？!?\n]*[\u4e00-\u9fff][^。！？!?\n]*[。！？!?]/gu) ?? []
+  const chinese = sentences
+    .map(sentence => sentence.trim())
+    .filter(sentence => (sentence.match(/[\u4e00-\u9fff]/gu)?.length ?? 0) >= 4 && sentence.length <= 80)
+  if (chinese.length > 0) return chinese.at(-1) ?? ''
+
   const lines = reasoning.split('\n').map(line => line.trim())
-    .filter(line => /[\u4e00-\u9fff]/u.test(line) && line.length <= 120)
+    .filter(line => {
+      const cjk = line.match(/[\u4e00-\u9fff]/gu)?.length ?? 0
+      return cjk >= 4 && cjk / line.length > 0.5 && line.length <= 80
+    })
   return lines.at(-1) ?? ''
 }
