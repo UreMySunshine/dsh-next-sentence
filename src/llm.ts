@@ -100,6 +100,7 @@ export async function completeSuggestion(
   if (direct.trim() !== '') return direct
 
   let text = ''
+  let reasoning = ''
   const deltaBlocks = new Set<number>()
   for await (const chunk of ctx.llm.stream({
     provider: route.provider,
@@ -118,7 +119,23 @@ export async function completeSuggestion(
     if (chunk.type === 'block-end' && chunk.block.type === 'text' && !deltaBlocks.has(chunk.index)) {
       text += chunk.block.text
     }
+    if (chunk.type === 'reasoning-delta') reasoning += chunk.text
+    if (chunk.type === 'block-end' && chunk.block.type === 'reasoning') reasoning += chunk.block.text
   }
   if (text.trim() !== '') return text
-  return nonStreamingCompletion(ctx, route, system, user, signal)
+  return fromReasoning(reasoning) || nonStreamingCompletion(ctx, route, system, user, signal)
+}
+
+/**
+ * Reasoning-only models sometimes leave the answer in the thinking stream.
+ * Prefer the last quoted Chinese sentence; otherwise take the last Chinese line.
+ */
+export function fromReasoning(reasoning: string): string {
+  const quoted = [...reasoning.matchAll(/[“"]([^”"\n]{4,120})[”"]/gu)]
+    .map(match => match[1]?.trim() ?? '')
+    .filter(text => /[\u4e00-\u9fff]/u.test(text))
+  if (quoted.length > 0) return quoted.at(-1) ?? ''
+  const lines = reasoning.split('\n').map(line => line.trim())
+    .filter(line => /[\u4e00-\u9fff]/u.test(line) && line.length <= 120)
+  return lines.at(-1) ?? ''
 }

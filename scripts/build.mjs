@@ -1,7 +1,7 @@
 import { build } from 'esbuild'
 
 await build({
-  entryPoints: ['src/index.ts', 'src/tui.ts', 'src/suggestion.ts'],
+  entryPoints: ['src/index.ts', 'src/tui.ts', 'src/suggestion.ts', 'src/llm.ts'],
   outdir: 'lib',
   bundle: true,
   packages: 'external',

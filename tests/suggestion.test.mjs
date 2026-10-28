@@ -22,3 +22,13 @@ test('上下文限制为最近八条', () => {
   assert(prompt.includes('第9条'))
   assert(prompt.endsWith('请输出用户下一句输入。'))
 })
+
+test('过滤空字符串占位回答', () => {
+  assert.equal(normalizeSuggestion('（空字符串）', ''), '')
+  assert.equal(normalizeSuggestion('null', ''), '')
+})
+
+test('从推理内容提取最后一条引号候选', async () => {
+  const { fromReasoning } = await import('../lib/llm.js')
+  assert.equal(fromReasoning('也许“明白了，那还需要验证哪些地方？”更自然。'), '明白了，那还需要验证哪些地方？')
+})

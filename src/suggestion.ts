@@ -12,6 +12,7 @@ export function normalizeSuggestion(raw: string, draft: string): string {
   if ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith('“') && text.endsWith('”'))) {
     text = text.slice(1, -1)
   }
+  if (/^[（(]?(?:空字符串|空|无|none|null)[）)]?$/iu.test(text)) return ''
   if (draft && text.startsWith(draft)) text = text.slice(draft.length)
   if (draft && text && !/[\s，。！？；：、,.!?;:）)\]]$/u.test(draft) && !/^[\s，。！？；：、,.!?;:（(\[]/u.test(text)) {
     text = ` ${text}`
