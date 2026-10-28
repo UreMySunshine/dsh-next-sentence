@@ -126,37 +126,58 @@ function Watermark({ text }: { text: string }) {
     if (!card) return
     const placeholderFor = () => card.querySelector<HTMLElement>('[data-composer-placeholder]')
     const editorFor = () => card.querySelector<HTMLElement>('[contenteditable="true"]')
-    const update = () => {
+    const update = (show = true) => {
       const editor = editorFor()
       if (!editor) return
       const placeholder = placeholderFor()
-      // The paragraph is the actual text line: it carries the composer's inner
-      // padding and moves below the attachment rail when an image is present.
+      // The placeholder is laid out by the composer itself at the exact text
+      // origin, including its inner padding and any attachment rail above it.
       const line = editor.querySelector('p') ?? editor
-      const rect = line.getBoundingClientRect()
+      const rect = (placeholder ?? line).getBoundingClientRect()
       const style = getComputedStyle(placeholder ?? editor)
       Object.assign(node.style, {
         left: `${rect.left}px`, top: `${rect.top}px`, width: `${editor.getBoundingClientRect().width}px`,
         fontFamily: style.fontFamily, fontSize: style.fontSize, fontWeight: style.fontWeight,
         lineHeight: style.lineHeight,
+        opacity: show ? '1' : '0',
       })
       if (placeholder && placeholder.style.visibility !== 'hidden') {
         placeholder.style.visibility = 'hidden'
       }
     }
-    update()
-    const resize = new ResizeObserver(update)
+    update(false)
+    // The composer settles its height and paragraph position a frame or two
+    // after the suggestion mounts; measuring once lands on the pre-layout box.
+    let active = true
+    const frame = requestAnimationFrame(() => {
+      if (!active) return
+      update()
+      requestAnimationFrame(() => { if (active) update() })
+    })
+    const timers = [80, 240, 600].map(delay => window.setTimeout(() => {
+      if (active) update(true)
+    }, delay))
+    const resize = new ResizeObserver(() => update(true))
     const editor = editorFor()
-    if (editor) resize.observe(editor)
+    if (editor) {
+      resize.observe(editor)
+      const line = editor.querySelector('p')
+      if (line) resize.observe(line)
+    }
     // Attachments are inserted and removed as React children; a rebuilt
     // placeholder would otherwise become visible again and overlap the hint.
-    const mutations = new MutationObserver(update)
+    const mutations = new MutationObserver(() => update(true))
     mutations.observe(card, { childList: true, subtree: true })
-    window.addEventListener('resize', update)
+    const onResize = () => update(true)
+    window.addEventListener('resize', onResize)
+    void document.fonts?.ready.then(() => { if (active) update(true) })
     return () => {
+      active = false
+      cancelAnimationFrame(frame)
+      timers.forEach(timer => window.clearTimeout(timer))
       resize.disconnect()
       mutations.disconnect()
-      window.removeEventListener('resize', update)
+      window.removeEventListener('resize', onResize)
       card.querySelectorAll<HTMLElement>('[data-composer-placeholder]').forEach(el => { el.style.visibility = '' })
     }
   }, [text])
@@ -266,7 +287,7 @@ export function apply(ctx: Context) {
     const style = document.createElement('style')
     style.dataset.plugin = 'dsh-next-sentence'
     style.textContent = `
-      .dsh-next-sentence { position:fixed; z-index:4; display:flex; align-items:center;
+      .dsh-next-sentence { position:fixed; z-index:4; display:flex; align-items:center; opacity:0;
         gap:8px; min-width:0; pointer-events:none; color:var(--dsw-alias-label-tertiary); }
       .dsh-next-sentence-text { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
       .dsh-next-sentence kbd { flex:none; padding:0 4px; border:1px solid var(--dsw-alias-border-l1);
