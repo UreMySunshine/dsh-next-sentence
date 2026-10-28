@@ -131,15 +131,23 @@ function Watermark({ text }: { text: string }) {
         fontFamily: style.fontFamily, fontSize: style.fontSize, fontWeight: style.fontWeight,
         lineHeight: style.lineHeight,
       })
-      if (placeholder) placeholder.style.visibility = 'hidden'
+      if (placeholder && placeholder.style.visibility !== 'hidden') {
+        placeholder.style.visibility = 'hidden'
+      }
     }
     update()
-    const observer = new ResizeObserver(update)
+    const resize = new ResizeObserver(update)
     const editor = document.querySelector<HTMLElement>('[data-composer-card] [contenteditable="true"]')
-    if (editor) observer.observe(editor)
+    if (editor) resize.observe(editor)
+    // Attachments are inserted and removed as React children; a rebuilt
+    // placeholder would otherwise become visible again and overlap the hint.
+    const mutations = new MutationObserver(update)
+    const card = document.querySelector<HTMLElement>('[data-composer-card]')
+    if (card) mutations.observe(card, { childList: true, subtree: true })
     window.addEventListener('resize', update)
     return () => {
-      observer.disconnect()
+      resize.disconnect()
+      mutations.disconnect()
       window.removeEventListener('resize', update)
       document.querySelectorAll<HTMLElement>('[data-composer-placeholder]').forEach(el => { el.style.visibility = '' })
     }
