@@ -123,10 +123,9 @@ function Watermark({ text }: { text: string }) {
       if (!node) return
       const placeholder = document.querySelector<HTMLElement>('[data-composer-placeholder]')
       const editor = document.querySelector<HTMLElement>('[data-composer-card] [contenteditable="true"]')
-      const host = placeholder ?? editor
-      if (!host) return
-      const rect = host.getBoundingClientRect()
-      const style = getComputedStyle(host)
+      if (!editor) return
+      const rect = editor.getBoundingClientRect()
+      const style = getComputedStyle(placeholder ?? editor)
       Object.assign(node.style, {
         left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`,
         fontFamily: style.fontFamily, fontSize: style.fontSize, fontWeight: style.fontWeight,
@@ -136,8 +135,8 @@ function Watermark({ text }: { text: string }) {
     }
     update()
     const observer = new ResizeObserver(update)
-    const placeholder = document.querySelector<HTMLElement>('[data-composer-placeholder]')
-    if (placeholder) observer.observe(placeholder)
+    const editor = document.querySelector<HTMLElement>('[data-composer-card] [contenteditable="true"]')
+    if (editor) observer.observe(editor)
     window.addEventListener('resize', update)
     return () => {
       observer.disconnect()

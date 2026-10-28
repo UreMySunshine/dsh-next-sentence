@@ -94,6 +94,11 @@ export async function completeSuggestion(
   user: string,
   signal: AbortSignal,
 ): Promise<string> {
+  // OpenAI-compatible routes answer consistently without streaming; prefer that
+  // path so a reasoning-only stream cannot leave the suggestion empty.
+  const direct = await nonStreamingCompletion(ctx, route, system, user, signal)
+  if (direct.trim() !== '') return direct
+
   let text = ''
   const deltaBlocks = new Set<number>()
   for await (const chunk of ctx.llm.stream({
