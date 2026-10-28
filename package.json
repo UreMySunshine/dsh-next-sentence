@@ -2,6 +2,7 @@
   "name": "dsh-next-sentence",
   "version": "0.1.0",
   "description": "Contextual next-prompt suggestions for DeepSeek Harness",
+  "icon": "icon.svg",
   "keywords": ["deepseek", "deepseek-harness", "dsh", "dsh-plugin", "dsh-tui", "autocomplete", "suggestion"],
   "repository": {
     "type": "git",
@@ -20,9 +21,10 @@
     "./client": { "types": "./lib/client.d.ts", "default": "./lib/client.js" },
     "./tui": { "types": "./lib/tui.d.ts", "default": "./lib/tui.js" },
     "./cordis.patch.yml": "./cordis.patch.yml",
+    "./locale/*.json": "./locale/*.json",
     "./package.json": "./package.json"
   },
-  "files": ["lib", "src", "scripts", "cordis.patch.yml", "README.md", "LICENSE"],
+  "files": ["lib", "src", "scripts", "locale/*.json", "icon.svg", "cordis.patch.yml", "README.md", "LICENSE"],
   "publishConfig": { "access": "public" },
   "scripts": {
     "build": "node scripts/build.mjs && tsc -p tsconfig.json",

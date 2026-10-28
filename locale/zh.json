@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "下一句推荐 (dsh-next-sentence)",
+    "description": "回合结束后在输入框内预测下一句用户消息，按 Tab 填入；支持桌面端与 dsh-tui，可在设置中关闭。"
+  }
+}

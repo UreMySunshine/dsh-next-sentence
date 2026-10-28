@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Next sentence (dsh-next-sentence)",
+    "description": "Predicts the user's next message in the composer after a turn ends; press Tab to fill it. Works in the desktop app and dsh-tui, and can be disabled in Settings."
+  }
+}
