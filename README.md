@@ -14,15 +14,21 @@
 
 ## 安装
 
-从 GitHub 安装到桌面版配置：
+从 npm 安装到桌面版配置：
+
+```sh
+dsh plugin --profile desktop add dsh-next-sentence
+```
+
+安装后重启 DeepSeek Harness。
+
+也可以从 GitHub 安装：
 
 ```sh
 dsh plugin --profile desktop add github:UreMySunshine/dsh-next-sentence
 ```
 
-安装后重启 DeepSeek Harness。
-
-也可以克隆仓库后使用本地目录：
+或者克隆仓库后使用本地目录：
 
 ```sh
 git clone https://github.com/UreMySunshine/dsh-next-sentence.git
@@ -34,7 +40,7 @@ dsh plugin --profile desktop add ./dsh-next-sentence
 终端模式在回合结束后，于输入框上方显示推荐；空草稿时按 `→` 或 `Tab` 填入，不发送。
 
 ```sh
-dsh plugin --profile dsh-tui add github:UreMySunshine/dsh-next-sentence
+dsh plugin --profile dsh-tui add dsh-next-sentence
 ```
 
 还需要在 dsh-tui 的 `cordis.patch.yml` 中挂载 TUI 半边：

@@ -23,9 +23,11 @@
     "./package.json": "./package.json"
   },
   "files": ["lib", "src", "scripts", "cordis.patch.yml", "README.md", "LICENSE"],
+  "publishConfig": { "access": "public" },
   "scripts": {
     "build": "node scripts/build.mjs && tsc -p tsconfig.json",
     "postinstall": "node scripts/patch-tui.mjs",
+    "prepublishOnly": "npm run build && npm test",
     "test": "node --test tests/*.test.mjs"
   },
   "dsh": {
