@@ -1,9 +1,17 @@
 {
   "name": "dsh-next-sentence",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Contextual next-prompt suggestions for DeepSeek Harness",
   "icon": "icon.svg",
-  "keywords": ["deepseek", "deepseek-harness", "dsh", "dsh-plugin", "dsh-tui", "autocomplete", "suggestion"],
+  "keywords": [
+    "deepseek",
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "dsh-tui",
+    "autocomplete",
+    "suggestion"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/UreMySunshine/dsh-next-sentence.git"
@@ -17,15 +25,35 @@
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "exports": {
-    ".": { "types": "./lib/index.d.ts", "default": "./lib/index.js" },
-    "./client": { "types": "./lib/client.d.ts", "default": "./lib/client.js" },
-    "./tui": { "types": "./lib/tui.d.ts", "default": "./lib/tui.js" },
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "types": "./lib/client.d.ts",
+      "default": "./lib/client.js"
+    },
+    "./tui": {
+      "types": "./lib/tui.d.ts",
+      "default": "./lib/tui.js"
+    },
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./locale/*.json": "./locale/*.json",
     "./package.json": "./package.json"
   },
-  "files": ["lib", "src", "scripts", "locale/*.json", "icon.svg", "cordis.patch.yml", "README.md", "LICENSE"],
-  "publishConfig": { "access": "public" },
+  "files": [
+    "lib",
+    "src",
+    "scripts",
+    "locale/*.json",
+    "icon.svg",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "node scripts/build.mjs && tsc -p tsconfig.json",
     "postinstall": "node scripts/patch-tui.mjs",
@@ -33,7 +61,9 @@
     "test": "node --test tests/*.test.mjs"
   },
   "dsh": {
-    "bundle": { "patch": "./cordis.patch.yml" },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "inject": [
         "@deepseek-ai/dsh-client-connection",
@@ -45,8 +75,13 @@
       "platform": "web"
     }
   },
-  "engines": { "node": ">=22.19", "dsh": ">=0.2.1-rc.2 <0.3.0" },
-  "peerDependencies": { "@deepseek-ai/cordis": "^4.0.5" },
+  "engines": {
+    "node": ">=22.19",
+    "dsh": ">=0.2.1-rc.2 <0.3.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.5"
+  },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.5",
     "@deepseek-ai/dsh-api-session-controller": "0.2.1-rc.2",
