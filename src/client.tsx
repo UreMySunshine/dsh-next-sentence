@@ -266,7 +266,12 @@ export function apply(ctx: Context) {
     }
     useEffect(() => () => { ref.current?.release(); ref.current = null }, [])
     const eventSource = ref.current!.binding.eventSource
-    return <Suggestion running={ref.current!.binding.session.getSnapshot().running}
+    const session = ref.current!.binding.session
+    const running = useSyncExternalStore(
+      listener => session.subscribe(listener),
+      () => session.getSnapshot().running,
+    )
+    return <Suggestion running={running}
       input={props.useInput(input => input)} inputActions={props.inputActions}
       eventSource={eventSource}
       directory={directories.directoryFor(props.sessionId)}

@@ -2,6 +2,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import { INSTRUCTIONS, normalizeSuggestion, promptFor, type HistoryMessage } from './suggestion.js'
+import { completeSuggestion } from './llm.js'
 
 export const name = 'dsh-next-sentence-tui'
 export const inject = ['llm']
@@ -10,6 +11,7 @@ interface StatusRuntime { set(key: string, text: string | undefined): () => void
 interface SuggestionHost {
   suggestion: string
   accept?: () => string
+  set?: (text: string) => void
 }
 
 function host(): SuggestionHost {
@@ -36,19 +38,36 @@ export function apply(ctx: Context): void {
   })
   const pending = new Map<Session, AbortController>()
   const state = host()
+  const publish = (text: string) => {
+    state.suggestion = text
+    state.set?.(text)
+  }
   state.accept = () => {
     const text = state.suggestion
-    state.suggestion = ''
-    status?.set('next-sentence', undefined)
+    publish('')
     return text
   }
-  ;(globalThis as typeof globalThis & { __dshNextSentenceAccept?: () => string }).__dshNextSentenceAccept = state.accept
+  const runtime = globalThis as typeof globalThis & {
+    __dshNextSentenceAccept?: () => string
+    __dshNextSentenceSubscribe?: (set: (text: string) => void) => () => void
+  }
+  runtime.__dshNextSentenceAccept = state.accept
+  runtime.__dshNextSentenceSubscribe = set => {
+    state.set = set
+    set(state.suggestion)
+    return () => {
+      if (state.set === set) state.set = undefined
+    }
+  }
+  ctx.effect(() => () => {
+    runtime.__dshNextSentenceSubscribe = undefined
+    runtime.__dshNextSentenceAccept = undefined
+  }, 'next-sentence: tui globals')
   ctx.on('session/event', (session: Session, event: SessionEvent) => {
     if (event.type === 'turn/start' || event.type === 'user/message') {
       pending.get(session)?.abort()
       pending.delete(session)
-      state.suggestion = ''
-      status?.set('next-sentence', undefined)
+      publish('')
       return
     }
     if (event.type !== 'turn/end' || ctx.llm === undefined) return
@@ -61,18 +80,8 @@ export function apply(ctx: Context): void {
     }
     const { provider, model } = header.config
     void (async () => {
-      let text = ''
-      for await (const chunk of ctx.llm.stream({
-        provider, model, system: INSTRUCTIONS,
-        messages: [{ role: 'user', content: [{ type: 'text', text: promptFor(historyOf(session), '') }] }],
-        maxTokens: 160, temperature: 0.4, signal: controller.signal,
-      })) {
-        if (chunk.type === 'text-delta') text += chunk.text
-      }
-      if (!controller.signal.aborted) {
-        state.suggestion = normalizeSuggestion(text, '')
-        status?.set('next-sentence', state.suggestion ? `→ / Tab 填入 · ${state.suggestion}` : undefined)
-      }
+      const text = await completeSuggestion(ctx, { provider, model }, INSTRUCTIONS, promptFor(historyOf(session), ''), controller.signal)
+      if (!controller.signal.aborted) publish(normalizeSuggestion(text, ''))
     })().catch((error: unknown) => {
       status?.set('next-sentence:error', `推荐生成失败：${error instanceof Error ? error.message : String(error)}`)
     }).finally(() => {

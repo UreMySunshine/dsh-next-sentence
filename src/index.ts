@@ -1,6 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-connection'
 import { INSTRUCTIONS, normalizeSuggestion, promptFor, type HistoryMessage } from './suggestion.js'
+import { completeSuggestion } from './llm.js'
 
 export const name = 'dsh-next-sentence'
 export const inject = ['llm']
@@ -67,17 +68,13 @@ export function apply(ctx: Context): void {
           }
           rpc.rpcId = body.rpcId
           const input = body.payload
-          let text = ''
-          for await (const chunk of ctx.llm.stream({
-            provider: input.provider, model: input.model,
-            ...(input.reasoningEffort ? { reasoningEffort: input.reasoningEffort } : {}),
-            system: INSTRUCTIONS,
-            messages: [{ role: 'user', content: [{ type: 'text', text: promptFor(input.history, input.draft) }] }],
-            maxTokens: 160, temperature: 0.4,
-          })) {
-            if (chunk.type === 'text-delta') text += chunk.text
-            if (chunk.type === 'finish' && chunk.reason.kind !== 'stop') break
-          }
+          const text = await completeSuggestion(
+            ctx,
+            { provider: input.provider, model: input.model, reasoningEffort: input.reasoningEffort },
+            INSTRUCTIONS,
+            promptFor(input.history, input.draft),
+            AbortSignal.timeout(60_000),
+          )
           rpc.result = { ok: true, value: { text: normalizeSuggestion(text, input.draft) } }
         } catch (error) {
           rpc.result = { ok: false, error: { code: 'suggest-failed', message: error instanceof Error ? error.message : String(error), details: {} } }
