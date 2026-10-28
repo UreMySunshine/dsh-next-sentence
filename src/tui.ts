@@ -44,9 +44,9 @@ export function apply(ctx: Context): void {
     state.set?.(text)
   }
   state.accept = () => {
-    const text = state.suggestion
-    publish('')
-    return text
+    // Keep the line available so deleting the filled draft restores it. A new
+    // turn clears it; repeat acceptance inserts the same text again.
+    return state.suggestion
   }
   const runtime = globalThis as typeof globalThis & {
     __dshNextSentenceAccept?: () => string
