@@ -207,7 +207,7 @@ function Suggestion({ running, input, inputActions, eventSource, directory, rpc,
     }
     if (cache.suggestion) { setSuggestion(cache.suggestion); return }
     if (revision === 0) return
-    if (!cache.settled || cache.dismissed || !selected || !rpc || input.phase !== 'plain') return
+    if (cache.dismissed || !selected || !rpc || input.phase !== 'plain') return
     const controller = new AbortController()
     const timer = window.setTimeout(async () => {
       const model = directory.store.getSnapshot().current
