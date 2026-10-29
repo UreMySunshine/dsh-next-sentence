@@ -1,6 +1,6 @@
 {
   "name": "dsh-next-sentence",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "Contextual next-prompt suggestions for DeepSeek Harness",
   "icon": "icon.svg",
   "keywords": [
@@ -16,7 +16,7 @@
     "type": "git",
     "url": "git+https://github.com/UreMySunshine/dsh-next-sentence.git"
   },
-  "homepage": "https://github.com/UreMySunshine/dsh-next-sentence#readme",
+  "homepage": "https://www.npmjs.com/package/dsh-next-sentence",
   "bugs": {
     "url": "https://github.com/UreMySunshine/dsh-next-sentence/issues"
   },

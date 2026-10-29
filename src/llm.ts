@@ -49,6 +49,7 @@ async function nonStreamingCompletion(
   system: string,
   user: string,
   signal: AbortSignal,
+  effort?: string,
 ): Promise<string> {
   const config = providerConfig(ctx, route.provider)
   if (config?.baseURL === undefined) {
@@ -72,6 +73,7 @@ async function nonStreamingCompletion(
       ],
       max_tokens: 4096,
       temperature: 0.4,
+      ...(effort === undefined ? {} : { reasoning_effort: effort }),
       stream: false,
     }),
     signal,
@@ -86,6 +88,23 @@ async function nonStreamingCompletion(
   return typeof content === 'string' ? content : ''
 }
 
+
+/** Lowest reasoning level the current route supports, so a suggestion does not wait on deep thinking. */
+async function fastestEffort(ctx: Context, route: SuggestionRoute): Promise<string | undefined> {
+  try {
+    const info = await ctx.llm.resolveModelInfo(route.provider, route.model) as {
+      reasoning?: { efforts?: readonly { id: string }[] }
+    }
+    const ids = info.reasoning?.efforts?.map(item => item.id) ?? []
+    for (const candidate of ['off', 'none', 'minimal', 'low', 'medium']) {
+      if (ids.includes(candidate)) return candidate
+    }
+    return ids[0]
+  } catch {
+    return undefined
+  }
+}
+
 /** Ask the current route for one suggestion, falling back when its stream carries no text. */
 export async function completeSuggestion(
   ctx: Context,
@@ -94,9 +113,10 @@ export async function completeSuggestion(
   user: string,
   signal: AbortSignal,
 ): Promise<string> {
+  const effort = await fastestEffort(ctx, route)
   // OpenAI-compatible routes answer consistently without streaming; prefer that
   // path so a reasoning-only stream cannot leave the suggestion empty.
-  const direct = await nonStreamingCompletion(ctx, route, system, user, signal)
+  const direct = await nonStreamingCompletion(ctx, route, system, user, signal, effort)
   if (direct.trim() !== '') return direct
 
   let text = ''
@@ -105,7 +125,7 @@ export async function completeSuggestion(
   for await (const chunk of ctx.llm.stream({
     provider: route.provider,
     model: route.model,
-    ...(route.reasoningEffort === undefined ? {} : { reasoningEffort: route.reasoningEffort as never }),
+    ...(effort === undefined ? {} : { reasoningEffort: effort as never }),
     system,
     messages: [{ role: 'user', content: [{ type: 'text', text: user }] }],
     maxTokens: 4096,

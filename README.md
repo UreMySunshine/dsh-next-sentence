@@ -1,5 +1,7 @@
 # dsh-next-sentence
 
+[![npm](https://img.shields.io/npm/v/dsh-next-sentence.svg)](https://www.npmjs.com/package/dsh-next-sentence)
+
 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 增加“下一句话”推荐：一轮助手工作结束后，如果输入框为空，用当前模型生成一条可以直接发送的用户消息，以暗色水印显示在输入框内；按 `Tab` 填入，按 `Esc` 关闭。插件不会自动发送消息。
 
 支持桌面版（Web UI）和 [dsh-tui](https://github.com/ccch1mneyyy/dsh-TUI)。
