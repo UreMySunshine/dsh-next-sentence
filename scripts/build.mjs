@@ -23,7 +23,7 @@ await build({
   sourcemap: true,
   logLevel: 'info',
   banner: {
-    js: 'window.__ModuleLoader__.load({\n\tid: "dsh-next-sentence",\n\tfactory: (require) => {\n\t\tvar module = { exports: {} };\n\t\tvar exports = module.exports;',
+    js: 'window.__ModuleLoader__.load({\n\tid: "@uremysunshine/dsh-next-sentence",\n\tfactory: (require) => {\n\t\tvar module = { exports: {} };\n\t\tvar exports = module.exports;',
   },
   footer: {
     js: '\n\t\treturn module.exports;\n\t}\n})',
