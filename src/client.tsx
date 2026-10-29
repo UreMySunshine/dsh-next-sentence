@@ -116,74 +116,43 @@ function editorEnd(actions: InputActions) {
 }
 
 function Watermark({ text }: { text: string }) {
-  const ref = useRef<HTMLDivElement>(null)
+  const ref = useRef<HTMLSpanElement>(null)
   useLayoutEffect(() => {
-    const node = ref.current
-    if (!node) return
-    // Scope every lookup to THIS composer: several sessions can keep hidden
-    // composers mounted, and a global query would take another one's geometry.
-    const card = node.closest<HTMLElement>('[data-composer-card]')
+    const anchor = ref.current
+    if (!anchor) return
+    const card = anchor.closest<HTMLElement>('[data-composer-card]')
     if (!card) return
-    const placeholderFor = () => card.querySelector<HTMLElement>('[data-composer-placeholder]')
-    const editorFor = () => card.querySelector<HTMLElement>('[contenteditable="true"]')
-    const update = (show = true) => {
-      const editor = editorFor()
-      if (!editor) return
-      const placeholder = placeholderFor()
-      // The placeholder is laid out by the composer itself at the exact text
-      // origin, including its inner padding and any attachment rail above it.
-      const line = editor.querySelector('p') ?? editor
-      const rect = (placeholder ?? line).getBoundingClientRect()
-      const style = getComputedStyle(placeholder ?? editor)
-      Object.assign(node.style, {
-        left: `${rect.left}px`, top: `${rect.top}px`, width: `${editor.getBoundingClientRect().width}px`,
-        fontFamily: style.fontFamily, fontSize: style.fontSize, fontWeight: style.fontWeight,
-        lineHeight: style.lineHeight,
-        opacity: show ? '1' : '0',
-      })
-      if (placeholder && placeholder.style.visibility !== 'hidden') {
-        placeholder.style.visibility = 'hidden'
+
+    let placeholder: HTMLElement | null = null
+    let original = ''
+    const render = () => {
+      const next = card.querySelector<HTMLElement>('[data-composer-placeholder]')
+      if (!next) return
+      if (next !== placeholder) {
+        placeholder = next
+        original = next.textContent ?? ''
+      }
+      if (next.dataset.dshSuggestion === text) return
+      next.dataset.dshSuggestion = text
+      next.textContent = text
+      const key = document.createElement('span')
+      key.className = 'dsh-next-sentence-tab'
+      key.textContent = 'Tab / →'
+      next.append(' ', key)
+    }
+
+    render()
+    const mutations = new MutationObserver(render)
+    mutations.observe(card, { childList: true, subtree: true })
+    return () => {
+      mutations.disconnect()
+      if (placeholder) {
+        placeholder.textContent = original
+        delete placeholder.dataset.dshSuggestion
       }
     }
-    update(false)
-    // The composer settles its height and paragraph position a frame or two
-    // after the suggestion mounts; measuring once lands on the pre-layout box.
-    let active = true
-    const frame = requestAnimationFrame(() => {
-      if (!active) return
-      update()
-      requestAnimationFrame(() => { if (active) update() })
-    })
-    const timers = [80, 240, 600].map(delay => window.setTimeout(() => {
-      if (active) update(true)
-    }, delay))
-    const resize = new ResizeObserver(() => update(true))
-    const editor = editorFor()
-    if (editor) {
-      resize.observe(editor)
-      const line = editor.querySelector('p')
-      if (line) resize.observe(line)
-    }
-    // Attachments are inserted and removed as React children; a rebuilt
-    // placeholder would otherwise become visible again and overlap the hint.
-    const mutations = new MutationObserver(() => update(true))
-    mutations.observe(card, { childList: true, subtree: true })
-    const onResize = () => update(true)
-    window.addEventListener('resize', onResize)
-    void document.fonts?.ready.then(() => { if (active) update(true) })
-    return () => {
-      active = false
-      cancelAnimationFrame(frame)
-      timers.forEach(timer => window.clearTimeout(timer))
-      resize.disconnect()
-      mutations.disconnect()
-      window.removeEventListener('resize', onResize)
-      card.querySelectorAll<HTMLElement>('[data-composer-placeholder]').forEach(el => { el.style.visibility = '' })
-    }
   }, [text])
-  return <div ref={ref} className="dsh-next-sentence" aria-hidden="true">
-    <span className="dsh-next-sentence-text">{text}</span><kbd>Tab / →</kbd>
-  </div>
+  return <span ref={ref} className="dsh-next-sentence-anchor" aria-hidden="true" />
 }
 
 interface SessionCache { suggestion: string; settled: boolean; dismissed: boolean }
@@ -303,6 +272,9 @@ export function apply(ctx: Context) {
     const style = document.createElement('style')
     style.dataset.plugin = 'dsh-next-sentence'
     style.textContent = `
+      .dsh-next-sentence-anchor { display:none; }
+      .dsh-next-sentence-tab { margin-left:8px; padding:0 4px; border:1px solid var(--dsw-alias-border-l1);
+        border-radius:4px; font-size:10px; color:var(--dsw-alias-label-caption); }
       .dsh-next-sentence { position:fixed; z-index:4; display:flex; align-items:center; opacity:0;
         gap:8px; min-width:0; pointer-events:none; color:var(--dsw-alias-label-tertiary); }
       .dsh-next-sentence-text { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

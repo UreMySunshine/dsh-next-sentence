@@ -1,6 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-connection'
-import { INSTRUCTIONS, normalizeSuggestion, promptFor, type HistoryMessage } from './suggestion.js'
+import { INSTRUCTIONS, normalizeSuggestion, promptFor, repeatsCompletedAction, type HistoryMessage } from './suggestion.js'
 import { completeSuggestion } from './llm.js'
 import { readConfig, writeConfig } from './config.js'
 
@@ -96,7 +96,11 @@ export function apply(ctx: Context): void {
                 promptFor(input.history, input.draft),
                 AbortSignal.timeout(60_000),
               )
-              rpc.result = { ok: true, value: { text: normalizeSuggestion(text, input.draft) } }
+              const suggestion = normalizeSuggestion(text, input.draft)
+              rpc.result = {
+                ok: true,
+                value: { text: repeatsCompletedAction(suggestion, input.history) ? '' : suggestion },
+              }
             }
           } else {
             rpc.result = { ok: false, error: { code: 'not-found', message: `unknown endpoint ${String(endpoint)}`, details: {} } }
