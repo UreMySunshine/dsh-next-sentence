@@ -1,6 +1,6 @@
 # dsh-next-sentence
 
-[![npm](https://img.shields.io/npm/v/dsh-next-sentence.svg)](https://www.npmjs.com/package/dsh-next-sentence)
+[![npm](https://img.shields.io/npm/v/@uremysunshine/dsh-next-sentence.svg)](https://www.npmjs.com/package/@uremysunshine/dsh-next-sentence)
 
 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 增加“下一句话”推荐：一轮助手工作结束后，如果输入框为空，用当前模型生成一条可以直接发送的用户消息，以暗色水印显示在输入框内；按 `Tab` 填入，按 `Esc` 关闭。插件不会自动发送消息。
 
@@ -19,7 +19,7 @@
 从 npm 安装到桌面版配置：
 
 ```sh
-dsh plugin --profile desktop add dsh-next-sentence
+dsh plugin --profile desktop add @uremysunshine/dsh-next-sentence
 ```
 
 安装后重启 DeepSeek Harness。
@@ -42,7 +42,7 @@ dsh plugin --profile desktop add ./dsh-next-sentence
 终端模式在回合结束后，于输入框上方显示推荐；空草稿时按 `→` 或 `Tab` 填入，不发送。
 
 ```sh
-dsh plugin --profile dsh-tui add dsh-next-sentence
+dsh plugin --profile dsh-tui add @uremysunshine/dsh-next-sentence
 ```
 
 还需要在 dsh-tui 的 `cordis.patch.yml` 中挂载 TUI 半边：
@@ -50,7 +50,7 @@ dsh plugin --profile dsh-tui add dsh-next-sentence
 ```yaml
 - insert:
     - id: next-sentence-tui
-      name: dsh-next-sentence/tui
+      name: "@uremysunshine/dsh-next-sentence/tui"
 ```
 
 dsh-tui 的输入组件需要支持“空草稿推荐接受入口”。安装时 `postinstall` 会尝试自动补上该入口。如果你在 dsh-tui 的 profile 里配置了：
@@ -58,7 +58,7 @@ dsh-tui 的输入组件需要支持“空草稿推荐接受入口”。安装时
 ```json
 {
   "scripts": {
-    "postinstall": "node node_modules/dsh-next-sentence/scripts/patch-tui.mjs"
+    "postinstall": "node node_modules/@uremysunshine/dsh-next-sentence/scripts/patch-tui.mjs"
   }
 }
 ```
@@ -66,7 +66,7 @@ dsh-tui 的输入组件需要支持“空草稿推荐接受入口”。安装时
 那么以后升级 dsh-tui 后，安装或更新依赖时会自动重新应用补丁。没有这项配置时，升级 dsh-tui 后需要手动执行一次：
 
 ```sh
-node node_modules/dsh-next-sentence/scripts/patch-tui.mjs
+node node_modules/@uremysunshine/dsh-next-sentence/scripts/patch-tui.mjs
 ```
 
 补丁脚本是幂等的，只修改 `PromptInput.js` 中空草稿时 `→`/`Tab` 的处理，并在第一次修改前保留备份。
