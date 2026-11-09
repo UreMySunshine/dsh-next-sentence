@@ -63,6 +63,7 @@ async function nonStreamingCompletion(
     method: 'POST',
     headers: {
       'content-type': 'application/json',
+      'user-agent': 'deepseek-harness (dsh-next-sentence)',
       ...(apiKey === undefined || apiKey === '' ? {} : { authorization: `Bearer ${apiKey}` }),
     },
     body: JSON.stringify({
