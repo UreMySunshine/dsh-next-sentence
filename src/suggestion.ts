@@ -1,8 +1,23 @@
-export const INSTRUCTIONS = `你负责预测用户在使用编程助手时下一句最可能输入的话。根据对话写出一个自然、具体、可以立即发送的短句，通常不超过50个汉字。不要解释，不要添加引号、Markdown或“你可以”等前缀，不要预测助手的话。用户尚未输入下一句，请基于刚结束的对话预测用户接下来最可能发送的完整消息，不要延续或补写助手回答。最近一条助手消息已经说明完成、已删除或已处理的事情，不要再次建议重复执行；优先给出下一步验证或新的操作。没有可靠预测时输出空字符串。`
+export const INSTRUCTIONS = `你预测用户在使用编程助手时下一句会自己输入什么。
+先看最近的对话和用户最初的需求，判断用户接下来要推进什么：写用户会打的字，不是你认为他应该做什么。
+判断标准：这句话填进输入框，用户会觉得“我正要打这句”。
+只写一句话，通常 4 到 20 个字，用词和语气与用户最近的消息一致。
+不要写：评价或感谢（“不错”“谢谢”）、助手口吻（“我来看看”“我先跑一下”）、问句、用户没提过的新方向、多句话。
+常见情况：助手说已经修好并测过 → “提交一下”；助手写完代码还没运行 → “跑一下”；助手给出几个方案 → 选一个（“用第二种”）；助手问要不要继续 → “继续”。
+不要解释，不加引号、Markdown 或“你可以”之类的前缀，不续写助手回答。
+助手已经完成的动作不要建议再做一遍，优先给下一步验证或新的操作。
+没有把握，或建议涉及删除数据、泄露凭据、绕过权限、具体利用步骤这类不可逆或危险操作时，只输出空字符串。`
 
 export interface HistoryMessage {
   role: 'user' | 'assistant'
   text: string
+}
+
+/** The first user turn plus the latest seven messages, so the original request survives long sessions. */
+export function windowHistory(messages: readonly HistoryMessage[]): HistoryMessage[] {
+  const recent = messages.slice(-7)
+  const original = messages.find(message => message.role === 'user')
+  return original === undefined || recent.includes(original) ? recent : [original, ...recent]
 }
 
 export function normalizeSuggestion(raw: string, draft: string): string {

@@ -16,7 +16,7 @@ interface OverlayProps {
 declare module '@deepseek-ai/dsh-api-session-controller/client' {
   interface SessionReferenceSourceMap { 'next-sentence': true }
 }
-import type { HistoryMessage } from './suggestion.js'
+import { windowHistory, type HistoryMessage } from './suggestion.js'
 
 export const inject = ['slots', 'sessions', 'modelDirectories', 'connection']
 const SLOT = 'conversation.input.overlay'
@@ -99,7 +99,7 @@ function historyOf(source: SessionEventSource): HistoryMessage[] {
     const text = message.content.filter((block): block is TextBlock => block.type === 'text').map(block => block.text).join('\n')
     if (text) messages.push({ role: event.type === 'user/message' ? 'user' : 'assistant', text })
   }
-  return messages.slice(-8)
+  return windowHistory(messages)
 }
 
 function editorEnd(actions: InputActions) {

@@ -1,7 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
-import { INSTRUCTIONS, normalizeSuggestion, promptFor, type HistoryMessage } from './suggestion.js'
+import { INSTRUCTIONS, normalizeSuggestion, promptFor, windowHistory, type HistoryMessage } from './suggestion.js'
 import { completeSuggestion } from './llm.js'
 import { readConfig } from './config.js'
 
@@ -29,7 +29,7 @@ export function historyOf(session: Session): HistoryMessage[] {
       .map(block => block.text).join('\n')
     if (text) messages.push({ role: event.type === 'user/message' ? 'user' : 'assistant', text })
   }
-  return messages.slice(-8)
+  return windowHistory(messages)
 }
 
 export function apply(ctx: Context): void {

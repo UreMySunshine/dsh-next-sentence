@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { normalizeSuggestion, promptFor } from '../lib/suggestion.js'
+import { normalizeSuggestion, promptFor, windowHistory } from '../lib/suggestion.js'
 
 test('只保留一行并移除包裹引号', () => {
   assert.equal(normalizeSuggestion('“运行测试并检查结果。”\n说明', ''), '运行测试并检查结果。')
@@ -21,6 +21,25 @@ test('上下文限制为最近八条', () => {
   assert(!prompt.includes('第0条'))
   assert(prompt.includes('第9条'))
   assert(prompt.endsWith('请输出用户下一句输入。'))
+})
+
+test('保留第一条用户消息与最后七条', () => {
+  const history = Array.from({ length: 10 }, (_, index) => ({ role: index % 2 === 0 ? 'user' : 'assistant', text: `第${index}条` }))
+  const windowed = windowHistory(history)
+  assert.equal(windowed.length, 8)
+  assert.equal(windowed[0].text, '第0条')
+  assert.equal(windowed.at(-1).text, '第9条')
+  const prompt = promptFor(windowed, '')
+  assert(prompt.includes('第0条'))
+  assert(prompt.includes('第9条'))
+})
+
+test('首条已在最近七条内时不重复', () => {
+  const history = [
+    { role: 'user', text: '开始' },
+    { role: 'assistant', text: '收到' },
+  ]
+  assert.deepEqual(windowHistory(history), history)
 })
 
 test('过滤空字符串占位回答', () => {
