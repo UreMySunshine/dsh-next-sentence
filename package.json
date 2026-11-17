@@ -1,6 +1,6 @@
 {
   "name": "@uremysunshine/dsh-next-sentence",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "description": "Contextual next-prompt suggestions for DeepSeek Harness",
   "icon": "icon.svg",
   "keywords": [
